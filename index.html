@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Credit • Master Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500&amp;display=swap');
+        
+        :root {
+            --tw-color-primary: #00b4d8;
+        }
+        
+        * {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        
+        .dashboard-card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 25px 25px 0 -10px rgb(0 180 216 / 0.1);
+        }
+        
+        .sidebar-link {
+            position: relative;
+        }
+        
+        .sidebar-link.active:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: #00b4d8;
+        }
+        
+        .modal {
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes modalPop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .live-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        table tr {
+            transition: all 0.2s ease;
+        }
+        
+        table tr:hover {
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+        <div class="modal bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="px-8 py-10">
+                <div class="flex items-center gap-x-3 mb-8">
+                    <div class="w-12 h-12 bg-[#00b4d8] rounded-2xl flex items-center justify-center text-white text-3xl">🏦</div>
+                    <div>
+                        <h1 class="text-3xl font-semibold tracking-[-1px]" style="font-family: 'Space Grotesk', sans-serif;">Home Credit</h1>
+                        <p class="text-slate-500 text-sm">Master Controller System</p>
+                    </div>
+                </div>
+                
+                <h2 class="text-2xl font-semibold mb-1">Admin Access</h2>
+                <p class="text-slate-600 mb-8">Sign in to control the entire financing ecosystem</p>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600 block mb-1.5">Username</label>
+                        <input id="usernameInput" type="text" value="admin" 
+                               class="w-full px-5 py-4 bg-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00b4d8]">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-slate-600 block mb-1.5">Password</label>
+                        <input id="passwordInput" type="password" value="admin" 
+                               class="w-full px-5 py-4 bg-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00b4d8]">
+                    </div>
+                    
+                    <button onclick="handleLogin()" 
+                            class="w-full py-4 bg-[#00b4d8] hover:bg-[#00a0c0] text-white rounded-2xl text-lg font-semibold flex items-center justify-center gap-x-2">
+                        <span>Enter Master Controller</span>
+                        <span class="text-2xl">→</span>
+                    </button>
+                    
+                    <div class="text-center text-xs text-slate-400">
+                        Demo credentials: <span class="font-mono bg-slate-100 px-2 py-px rounded">admin / admin</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 px-8 py-6 text-center text-xs flex items-center justify-center gap-x-8 border-t">
+                <div class="flex items-center gap-x-1">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full live-dot"></div>
+                    LIVE SIMULATION
+                </div>
+                <div>Philippines • 2026</div>
+                <div class="text-emerald-600 font-medium">All data fully editable</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" class="hidden min-h-screen flex">
+        
+        <!-- SIDEBAR -->
+        <div class="w-72 bg-white border-r border-slate-200 flex flex-col h-screen">
+            
+            <!-- Logo -->
+            <div class="px-8 py-8 border-b flex items-center gap-x-3">
+                <div class="w-10 h-10 bg-[#00b4d8] rounded-2xl flex items-center justify-center text-white text-4xl flex-shrink-0">🏦</div>
+                <div class="flex-1">
+                    <h1 class="text-3xl font-semibold tracking-[-1px] text-slate-900" style="font-family: 'Space Grotesk', sans-serif;">Home Credit</h1>
+                    <p class="text-xs text-[#00b4d8] font-medium">MASTER CONTROLLER v2.4.1</p>
+                </div>
+                <div onclick="toggleDarkMode()" class="cursor-pointer text-slate-400 hover:text-slate-600 text-2xl">🌗</div>
+            </div>
+            
+            <!-- Simulation Status -->
+            <div class="mx-6 mt-6 bg-slate-100 rounded-3xl p-4 flex items-center justify-between text-sm">
+                <div class="flex items-center gap-x-2">
+                    <div id="simStatusDot" class="w-3 h-3 bg-emerald-400 rounded-full live-dot"></div>
+                    <span id="simStatusText" class="font-medium text-slate-700">Simulation LIVE</span>
+                </div>
+                <div class="flex items-center gap-x-3">
+                    <button onclick="toggleSimulation()" id="simBtn"
+                            class="px-5 py-1.5 text-xs font-semibold bg-white shadow-sm rounded-2xl flex items-center gap-x-1 hover:shadow">
+                        <span id="simIcon">⏸️</span>
+                        <span id="simLabel">PAUSE</span>
+                    </button>
+                    <button onclick="resetSystem()" 
+                            class="text-xs font-medium text-red-500 hover:text-red-600 flex items-center">
+                        RESET
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+                <a onclick="navigateTo('dashboard')" class="sidebar-link active flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-dashboard">
+                    📊 Dashboard
+                </a>
+                <a onclick="navigateTo('users')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-users">
+                    👥 Users
+                </a>
+                <a onclick="navigateTo('loans')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-loans">
+                    💳 Loans
+                </a>
+                <a onclick="navigateTo('products')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-products">
+                    📱 Products
+                </a>
+                <a onclick="navigateTo('billing')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-billing">
+                    💵 Billing &amp; Payments
+                </a>
+                <a onclick="navigateTo('receipts')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-receipts">
+                    🧾 Receipts
+                </a>
+                <a onclick="navigateTo('analytics')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-analytics">
+                    📈 Analytics
+                </a>
+                
+                <div class="px-6 py-2 text-xs font-medium text-slate-400 mt-8">MASTER CONTROLS</div>
+                
+                <a onclick="navigateTo('admin')" class="sidebar-link flex items-center gap-x-3 px-6 py-4 text-slate-700 hover:bg-slate-100 rounded-3xl font-medium" id="nav-admin">
+                    ⚙️ Admin Panel
+                </a>
+            </nav>
+            
+            <!-- Footer -->
+            <div class="p-6 border-t text-xs">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-x-2">
+                        <span class="text-emerald-500">●</span>
+                        <span id="liveUserCount" class="font-mono font-semibold">248</span>
+                        <span class="text-slate-400">live users</span>
+                    </div>
+                    <button onclick="showNotificationPanel()" 
+                            class="flex items-center gap-x-1 text-slate-400 hover:text-slate-600 relative">
+                        🛎️
+                        <span id="notificationCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">3</span>
+                    </button>
+                </div>
+                <div class="mt-4 text-slate-400 text-[10px] flex items-center justify-between">
+                    <span>Connected to 14 branches</span>
+                    <span onclick="logout()" class="cursor-pointer hover:text-slate-600">Logout admin</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CONTENT AREA -->
+        <div class="flex-1 flex flex-col">
+            
+            <!-- Top Bar -->
+            <div class="h-16 border-b bg-white px-8 flex items-center justify-between">
+                <div class="flex items-center">
+                    <h2 id="pageTitle" class="text-2xl font-semibold text-slate-900">Dashboard</h2>
+                    
+                    <div onclick="generateBulkUsers()" 
+                         class="ml-8 flex items-center gap-x-2 text-xs font-medium bg-emerald-100 text-emerald-700 px-4 h-8 rounded-2xl cursor-pointer hover:bg-emerald-200">
+                        <span>⚡</span>
+                        <span>ADD NEW USER (1s)</span>
+                    </div>
+                    
+                    <div class="ml-3 flex items-center text-xs font-medium text-slate-400">
+                        <span class="px-3 py-1 bg-white border rounded-2xl flex items-center" id="currentTime"></span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-6">
+                    <!-- Real-time simulation log -->
+                    <div id="simLog" class="text-xs font-mono bg-slate-100 px-4 h-9 rounded-2xl flex items-center text-slate-500 max-w-[260px] truncate"></div>
+                    
+                    <!-- Installment Calculator Quick -->
+                    <button onclick="showCalculator()" 
+                            class="flex items-center gap-x-2 text-sm font-medium px-5 h-9 border border-slate-200 hover:border-[#00b4d8] rounded-2xl">
+                        📐 Calculator
+                    </button>
+                    
+                    <!-- Real-life mode -->
+                    <div onclick="toggleRealLifeMode()" class="flex items-center gap-x-2 cursor-pointer">
+                        <span id="realLifeBadge" class="px-3 py-px text-xs font-medium bg-amber-100 text-amber-600 rounded-2xl flex items-center">REAL-LIFE MODE OFF</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-3">
+                        <div class="text-right">
+                            <div class="text-sm font-semibold">Admin Master</div>
+                            <div class="text-xs text-emerald-600">Full access • Philippines</div>
+                        </div>
+                        <div class="w-9 h-9 bg-slate-200 rounded-2xl flex items-center justify-center text-2xl">👨‍💼</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PAGE CONTENT CONTAINER -->
+            <div id="contentArea" class="flex-1 p-8 overflow-auto">
+                <!-- Dynamically injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- User Edit Modal -->
+    <div id="userModal" onclick="if(event.target.id === 'userModal')hideModal('userModal')" 
+         class="hidden fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+        <div class="modal bg-white rounded-3xl w-full max-w-2xl mx-4 p-8">
+            <h3 class="text-xl font-semibold mb-6">Edit User</h3>
+            <div id="userFormContent" class="grid grid-cols-2 gap-6"></div>
+            <div class="flex justify-end gap-x-4 mt-8">
+                <button onclick="hideModal('userModal')" class="px-8 py-3 text-slate-500 font-medium">Cancel</button>
+                <button onclick="saveUserEdit()" class="px-8 py-3 bg-[#00b4d8] text-white font-medium rounded-2xl">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Assignment Modal -->
+    <div id="loanModal" onclick="if(event.target.id === 'loanModal')hideModal('loanModal')" 
+         class="hidden fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+        <div class="modal bg-white rounded-3xl w-full max-w-xl mx-4 p-8">
+            <h3 class="text-xl font-semibold mb-6">Assign New Loan</h3>
+            <div id="loanFormContent" class="space-y-6"></div>
+            <div class="flex justify-end gap-x-4 mt-8">
+                <button onclick="hideModal('loanModal')" class="px-8 py-3 text-slate-500 font-medium">Cancel</button>
+                <button onclick="assignLoanFromModal()" class="px-8 py-3 bg-[#00b4d8] text-white font-medium rounded-2xl">Assign Loan Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculator Modal -->
+    <div id="calcModal" onclick="if(event.target.id === 'calcModal')hideModal('calcModal')" 
+         class="hidden fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+        <div class="modal bg-white rounded-3xl w-full max-w-lg mx-4 p-8">
+            <h3 class="text-xl font-semibold mb-6">Installment Calculator</h3>
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-sm mb-2">Loan Amount (₱)</label>
+                    <input id="calcAmount" type="number" value="25000" class="w-full px-4 py-4 border rounded-2xl text-3xl font-semibold">
+                </div>
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm mb-2">Term (months)</label>
+                        <select id="calcTerm" class="w-full px-4 py-4 border rounded-2xl text-lg">
+                            <option value="3">3 months</option>
+                            <option value="6" selected>6 months</option>
+                            <option value="9">9 months</option>
+                            <option value="12">12 months</option>
+                            <option value="18">18 months</option>
+                            <option value="24">24 months</option>
+                            <option value="36">36 months</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-2">Monthly Interest %</label>
+                        <input id="calcRate" type="number" value="2.8" step="0.1" class="w-full px-4 py-4 border rounded-2xl text-3xl font-semibold">
+                    </div>
+                </div>
+                <div class="bg-slate-100 rounded-3xl p-6">
+                    <div class="flex justify-between text-sm mb-4">
+                        <span>Monthly Installment</span>
+                        <span id="calcMonthly" class="font-semibold text-3xl">₱4,583</span>
+                    </div>
+                    <div class="flex justify-between text-sm mb-4">
+                        <span>Total Payable</span>
+                        <span id="calcTotal" class="font-semibold">₱27,498</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span>Total Interest Earned</span>
+                        <span id="calcInterest" class="font-semibold text-emerald-600">₱2,498</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-xs text-slate-400 mt-8">Real-time computation • Matches Home Credit flat-rate model</div>
+        </div>
+    </div>
+
+    <!-- Receipt Preview Modal -->
+    <div id="receiptModal" onclick="if(event.target.id === 'receiptModal')hideModal('receiptModal')" 
+         class="hidden fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+        <div class="modal bg-white rounded-3xl max-w-2xl w-full mx-4 p-8">
+            <div id="receiptPreview" class="bg-white border-2 border-dashed border-slate-300 rounded-3xl p-8 text-sm"></div>
+            <div class="flex justify-end mt-6">
+                <button onclick="downloadReceipt()" class="px-6 py-3 bg-emerald-600 text-white rounded-2xl flex items-center gap-x-2">
+                    <span>⬇️</span> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============== TAILWIND INIT ==============
+        function initTailwind() {
+            return {
+                init() {
+                    return this.configUserTheme()
+                },
+                configUserTheme() {
+                    return {
+                        config(userConfig = {}) {
+                            return {
+                                configUser: userConfig,
+                                theme: {
+                                    extend: {
+                                        colors: {
+                                            primary: '#00b4d8'
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        theme: {
+                            extend: {},
+                        }
+                    }
+                },
+                configUser(userConfig = {}) {
+                    return {
+                        ...this.defaultConfig(),
+                        ...this.config(userConfig).theme
+                    }
+                },
+                defaultConfig() {
+                    return {
+                        theme: {
+                            extend: {}
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ============== GLOBAL DATA STORE ==============
+        let USERS = []
+        let LOANS = []
+        let PRODUCTS = []
+        let PAYMENTS = []
+        let RECEIPTS = []
+        let SIMULATION_RUNNING = true
+        let REAL_LIFE_MODE = false
+        let DARK_MODE = false
+        let currentUserIdEditing = null
+        let currentLoanIdEditing = null
+        
+        // Philippine data
+        const FILIPINO_FIRST = ["Juan", "Maria", "Jose", "Ana", "Carlos", "Lourdes", "Ramon", "Elena", "Miguel", "Sofia", "Andres", "Isabella", "Rafael", "Carmen", "Gabriel"]
+        const FILIPINO_LAST = ["Santos", "Reyes", "Cruz", "Dela Cruz", "Bautista", "Garcia", "Lopez", "Gonzales", "Morales", "Aquino", "Rivera", "Hernandez"]
+        const REGIONS = ["NCR", "Region III", "Region IV-A", "Region VII", "Region XI", "Region X", "CAR", "Region VI"]
+        const BARANGAYS = ["Barangay 1", "Poblacion", "San Isidro", "Sta. Cruz", "San Roque", "Mabuhay", "Luzon", "Visayas", "Mindanao"]
+        
+        // ============== DATA GENERATORS ==============
+        function generateNewUser() {
+            const first = FILIPINO_FIRST[Math.floor(Math.random() * FILIPINO_FIRST.length)]
+            const last = FILIPINO_LAST[Math.floor(Math.random() * FILIPINO_LAST.length)]
+            const region = REGIONS[Math.floor(Math.random() * REGIONS.length)]
+            
+            return {
+                id: 'HC-' + String(Math.floor(1000000 + Math.random() * 9000000)),
+                name: `${first} ${last}`,
+                customerId: 'C' + String(100000 + Math.floor(Math.random() * 899999)),
+                address: `${Math.floor(10 + Math.random() * 90)} ${['Main', 'Rizal', 'Quezon', 'Mabini'][Math.floor(Math.random()*4)]} St.`,
+                barangay: BARANGAYS[Math.floor(Math.random() * BARANGAYS.length)],
+                region: region,
+                contact: '09' + String(100000000 + Math.floor(Math.random() * 899999999)),
+                email: `${first.toLowerCase()}.${last.toLowerCase()}@gmail.com`,
+                employment: ['Employed', 'Self-employed', 'OFW', 'Unemployed'][Math.floor(Math.random() * 4)],
+                income: Math.floor(15000 + Math.random() * 85000),
+                creditScore: Math.floor(620 + Math.random() * 180),
+                status: ['Active', 'Pending', 'Blacklisted', 'Completed'][Math.floor(Math.random() * 4)],
+                createdAt: new Date().toISOString()
+            }
+        }
+        
+        function generateProduct() {
+            const categories = ['Gadget', 'Appliance', 'Mobile', 'Laptop', 'TV']
+            const names = [
+                'Samsung Galaxy S24 Ultra', 'iPhone 16 Pro', 'Xiaomi Redmi 13', 'Lenovo IdeaPad Slim 5',
+                'LG 55" OLED TV', 'TCL 65" QLED', 'Samsung 43" Crystal UHD', 'Dyson V15 Vacuum',
+                'Electrolux 7kg Washer', 'Sharp 1.5HP Inverter AC', 'iPad Air M2 11"', 'MacBook Air M3'
+            ]
+            const name = names[Math.floor(Math.random() * names.length)]
+            return {
+                id: 'P-' + String(10000 + Math.floor(Math.random() * 90000)),
+                name: name,
+                category: categories[Math.floor(Math.random() * categories.length)],
+                price: Math.floor(12000 + Math.random() * 138000),
+                stock: Math.floor(Math.random() * 80) + 5,
+                lastUpdated: new Date().toISOString()
+            }
+        }
+        
+        function calculateLoan(amount, termMonths, monthlyInterestRate, downPaymentPercent = 0) {
+            const financed = amount * (1 - downPaymentPercent / 100)
+            // Flat rate interest (common in Home Credit)
+            const totalInterest = financed * (monthlyInterestRate / 100) * termMonths
+            const totalPayable = financed + totalInterest
+            const monthlyInstallment = Math.round(totalPayable / termMonths)
+            
+            return {
+                financedAmount: Math.round(financed),
+                monthlyInstallment: monthlyInstallment,
+                totalPayable: Math.round(totalPayable),
+                totalInterest: Math.round(totalInterest)
+            }
+        }
+        
+        // ============== PERSISTENCE ==============
+        function saveData() {
+            const data = {
+                users: USERS,
+                loans: LOANS,
+                products: PRODUCTS,
+                payments: PAYMENTS,
+                receipts: RECEIPTS,
+                lastSaved: new Date().toISOString()
+            }
+            localStorage.setItem('homeCreditMasterData', JSON.stringify(data))
+        }
+        
+        function loadData() {
+            const saved = localStorage.getItem('homeCreditMasterData')
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                USERS = parsed.users || []
+                LOANS = parsed.loans || []
+                PRODUCTS = parsed.products || []
+                PAYMENTS = parsed.payments || []
+                RECEIPTS = parsed.receipts || []
+            } else {
+                // Seed initial data
+                for (let i = 0; i < 18; i++) {
+                    USERS.push(generateNewUser())
+                }
+                
+                // Seed some products
+                for (let i = 0; i < 42; i++) {
+                    PRODUCTS.push(generateProduct())
+                }
+                
+                // Seed loans
+                for (let i = 0; i < 12; i++) {
+                    const user = USERS[Math.floor(Math.random() * USERS.length)]
+                    const product = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)]
+                    const calc = calculateLoan(product.price, [6,12,18][Math.floor(Math.random()*3)], 2.8 + Math.random()*1.5)
+                    
+                    LOANS.push({
+                        loanId: 'L-' + String(100000 + Math.floor(Math.random() * 899999)),
+                        userId: user.id,
+                        userName: user.name,
+                        type: 'Product Loan',
+                        productName: product.name,
+                        financedAmount: calc.financedAmount,
+                        termMonths: [6,12,18][Math.floor(Math.random()*3)],
+                        monthlyInterestRate: 2.8 + Math.random()*1.5,
+                        monthlyInstallment: calc.monthlyInstallment,
+                        totalPayable: calc.totalPayable,
+                        paidAmount: Math.floor(Math.random() * calc.totalPayable * 0.7),
+                        status: ['Ongoing', 'Paid', 'Overdue'][Math.floor(Math.random() * 3)],
+                        startDate: new Date(Date.now() - Math.random() * 7776000000).toISOString().split('T')[0],
+                        nextDueDate: new Date(Date.now() + Math.random() * 2592000000).toISOString().split('T')[0],
+                        paymentHistory: []
+                    })
+                }
+                
+                saveData()
+            }
+            
+            // Live count update
+            document.getElementById('liveUserCount').textContent = USERS.length
+        }
+        
+        // ============== SIMULATION ENGINE ==============
+        let simulationTimer = null
+        
+        function startSimulation() {
+            if (simulationTimer) return
+            
+            simulationTimer = setInterval(() => {
+                if (!SIMULATION_RUNNING) return
+                
+                // 1. Generate new user every second
+                const newUser = generateNewUser()
+                USERS.unshift(newUser)
+                if (USERS.length > 450) USERS.pop() // prevent memory explosion
+                
+                // 2. Auto-assign loan to eligible users
+                const eligible = USERS.filter(u => u.creditScore > 680 && u.status === 'Active')
+                if (eligible.length > 0 && Math.random() > 0.6) {
+                    const luckyUser = eligible[Math.floor(Math.random() * eligible.length)]
+                    const product = PRODUCTS[Math.floor(Math.random() * Math.min(20, PRODUCTS.length))]
+                    const calc = calculateLoan(product.price * 0.9, 12, 2.9)
+                    
+                    const newLoan = {
+                        loanId: 'L-' + String(100000 + Math.floor(Math.random() * 899999)),
+                        userId: luckyUser.id,
+                        userName: luckyUser.name,
+                        type: product.category === 'Gadget' || product.category === 'Mobile' ? 'Gadget Loan' : 'Appliance Loan',
+                        productName: product.name,
+                        financedAmount: calc.financedAmount,
+                        termMonths: 12,
+                        monthlyInterestRate: 2.9,
+                        monthlyInstallment: calc.monthlyInstallment,
+                        totalPayable: calc.totalPayable,
+                        paidAmount: 0,
+                        status: 'Ongoing',
+                        startDate: new Date().toISOString().split('T')[0],
+                        nextDueDate: new Date(Date.now() + 2592000000).toISOString().split('T')[0],
+                        paymentHistory: []
+                    }
+                    LOANS.unshift(newLoan)
+                }
+                
+                // 3. Simulate payments on random loans
+                if (LOANS.length > 0) {
+                    const activeLoans = LOANS.filter(l => l.status === 'Ongoing')
+                    if (activeLoans.length) {
+                        const randomLoan = activeLoans[Math.floor(Math.random() * activeLoans.length)]
+                        const isPaying = Math.random() > 0.35
+                        
+                        if (isPaying) {
+                            const paymentAmount = randomLoan.monthlyInstallment + (Math.random() > 0.8 ? 1200 : 0)
+                            randomLoan.paidAmount += paymentAmount
+                            randomLoan.paymentHistory.unshift({
+                                date: new Date().toISOString().split('T')[0],
+                                amount: paymentAmount,
+                                status: 'Paid'
+                            })
+                            
+                            // Update credit score
+                            const user = USERS.find(u => u.id === randomLoan.userId)
+                            if (user) user.creditScore = Math.min(850, user.creditScore + (Math.random() > 0.5 ? 8 : 4))
+                            
+                            // Create receipt
+                            createReceipt(randomLoan, paymentAmount)
+                        } else {
+                            // Missed payment
+                            randomLoan.paymentHistory.unshift({
+                                date: new Date().toISOString().split('T')[0],
+                                amount: 0,
+                                status: 'Missed'
+                            })
+                            const user = USERS.find(u => u.id === randomLoan.userId)
+                            if (user) user.creditScore = Math.max(550, user.creditScore - 12)
+                            
+                            // Real-life mode: occasional penalty
+                            if (REAL_LIFE_MODE && Math.random() > 0.7) {
+                                randomLoan.financedAmount += Math.round(randomLoan.monthlyInstallment * 0.08) // late fee
+                            }
+                        }
+                        
+                        // Update status
+                        if (randomLoan.paidAmount >= randomLoan.totalPayable) {
+                            randomLoan.status = 'Paid'
+                        } else if (new Date(randomLoan.nextDueDate) < new Date()) {
+                            randomLoan.status = 'Overdue'
+                        }
+                    }
+                }
+                
+                // Update live log
+                const logEl = document.getElementById('simLog')
+                if (logEl) {
+                    logEl.innerHTML = `✓ New user <span class="font-semibold">${newUser.name}</span> • ${new Date().toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'})}`
+                }
+                
+                // Refresh current page if needed
+                const activePage = document.querySelector('.sidebar-link.active').id.replace('nav-', '')
+                if (['dashboard', 'users', 'loans'].includes(activePage)) {
+                    renderCurrentPage()
+                }
+                
+                saveData()
+                document.getElementById('liveUserCount').textContent = USERS.length
+            }, 1000)
+        }
+        
+        function toggleSimulation() {
+            SIMULATION_RUNNING = !SIMULATION_RUNNING
+            const btn = document.getElementById('simBtn')
+            const dot = document.getElementById('simStatusDot')
+            const text = document.getElementById('simStatusText')
+            
+            if (SIMULATION_RUNNING) {
+                btn.innerHTML = `<span id="simIcon">⏸️</span><span id="simLabel">PAUSE</span>`
+                dot.className = 'w-3 h-3 bg-emerald-400 rounded-full live-dot'
+                text.textContent = 'Simulation LIVE'
+                startSimulation()
+            } else {
+                btn.innerHTML = `<span id="simIcon">▶️</span><span id="simLabel">RESUME</span>`
+                dot.className = 'w-3 h-3 bg-slate-400 rounded-full'
+                text.textContent = 'Simulation PAUSED'
+                clearInterval(simulationTimer)
+                simulationTimer = null
+            }
+        }
+        
+        function createReceipt(loan, amount) {
+            const receipt = {
+                receiptId: 'R-' + String(10000000 + Math.floor(Math.random() * 90000000)),
+                date: new Date().toISOString(),
+                userId: loan.userId,
+                userName: loan.userName,
+                loanId: loan.loanId,
+                amount: amount,
+                type: 'Installment Payment',
+                breakdown: {
+                    principal: Math.round(amount * 0.7),
+                    interest: Math.round(amount * 0.3)
+                },
+                transactionId: 'TX-' + Date.now()
+            }
+            RECEIPTS.unshift(receipt)
+            if (RECEIPTS.length > 300) RECEIPTS.pop()
+            return receipt
+        }
+        
+        // ============== RENDER FUNCTIONS ==============
+        function renderDashboard() {
+            const totalUsers = USERS.length
+            const activeLoans = LOANS.filter(l => l.status === 'Ongoing').length
+            const totalPaid = LOANS.reduce((acc, l) => acc + l.paidAmount, 0)
+            const totalInterest = LOANS.reduce((acc, l) => acc + (l.totalPayable - l.financedAmount), 0)
+            
+            const html = `
+            <div class="grid grid-cols-12 gap-6">
+                <!-- Stats -->
+                <div class="col-span-12 lg:col-span-3 dashboard-card bg-white rounded-3xl shadow p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">TOTAL USERS</p>
+                            <p class="text-5xl font-semibold mt-1">${totalUsers}</p>
+                        </div>
+                        <div class="text-6xl">👥</div>
+                    </div>
+                    <div class="mt-8 text-emerald-500 text-sm font-medium flex items-center">+${Math.floor(Math.random()*12)+4} today</div>
+                </div>
+                <div class="col-span-12 lg:col-span-3 dashboard-card bg-white rounded-3xl shadow p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">ACTIVE LOANS</p>
+                            <p class="text-5xl font-semibold mt-1">${activeLoans}</p>
+                        </div>
+                        <div class="text-6xl">💳</div>
+                    </div>
+                    <div class="mt-8 text-emerald-500 text-sm font-medium flex items-center">↑12% from last month</div>
+                </div>
+                <div class="col-span-12 lg:col-span-3 dashboard-card bg-white rounded-3xl shadow p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">INTEREST EARNED</p>
+                            <p class="text-5xl font-semibold mt-1">₱${totalInterest.toLocaleString()}</p>
+                        </div>
+                        <div class="text-6xl">📈</div>
+                    </div>
+                    <div class="mt-8 text-emerald-500 text-sm font-medium flex items-center">This quarter</div>
+                </div>
+                <div class="col-span-12 lg:col-span-3 dashboard-card bg-white rounded-3xl shadow p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">PAYMENT RATIO</p>
+                            <p class="text-5xl font-semibold mt-1">${Math.round((totalPaid / (LOANS.reduce((a,l)=>a+l.totalPayable,0) || 1)) * 100)}%</p>
+                        </div>
+                        <div class="text-6xl">💵</div>
+                    </div>
+                    <div class="mt-8 text-red-500 text-sm font-medium flex items-center">3 overdue alerts</div>
+                </div>
+                
+                <!-- Charts -->
+                <div class="col-span-12 lg:col-span-8 bg-white rounded-3xl shadow p-8">
+                    <h3 class="font-semibold mb-4">Payment Trends (Last 30 days)</h3>
+                    <canvas id="trendChart" class="h-72"></canvas>
+                </div>
+                
+                <div class="col-span-12 lg:col-span-4 bg-white rounded-3xl shadow p-8">
+                    <h3 class="font-semibold mb-4">Loan Distribution</h3>
+                    <canvas id="pieChart" class="h-72"></canvas>
+                </div>
+                
+                <!-- Recent activity -->
+                <div class="col-span-12 bg-white rounded-3xl shadow p-8">
+                    <h3 class="font-semibold mb-4 flex justify-between"><span>Recent Loan Assignments</span><span onclick="navigateTo('loans')" class="text-xs text-[#00b4d8] cursor-pointer">View all →</span></h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${LOANS.slice(0, 3).map(loan => `
+                            <div onclick="viewLoanProfile('${loan.loanId}')" class="border rounded-2xl p-4 cursor-pointer hover:shadow-sm">
+                                <div class="flex justify-between"><span class="font-medium">${loan.userName}</span><span class="text-xs bg-emerald-100 text-emerald-700 px-3 rounded-2xl flex items-center">${loan.status}</span></div>
+                                <p class="text-xl font-semibold mt-2">₱${loan.financedAmount.toLocaleString()}</p>
+                                <p class="text-xs text-slate-400">${loan.productName || loan.type}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>`
+            
+            document.getElementById('contentArea').innerHTML = html
+            
+            // Render charts
+            setTimeout(() => {
+                // Trend chart
+                new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Mar 7', 'Mar 10', 'Mar 14', 'Mar 18', 'Mar 22', 'Mar 26', 'Mar 30', 'Apr 3'],
+                        datasets: [{
+                            label: 'Payments Collected',
+                            data: [124000, 98000, 156000, 87000, 201000, 112000, 174000, 198000],
+                            borderColor: '#00b4d8',
+                            tension: 0.4,
+                            borderWidth: 3
+                        }]
+                    },
+                    options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f5f9' } } } }
+                })
+                
+                // Pie
+                new Chart(document.getElementById('pieChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Cash Loans', 'Gadget Loans', 'Appliance Loans', 'Custom'],
+                        datasets: [{
+                            data: [38, 31, 22, 9],
+                            backgroundColor: ['#00b4d8', '#22d3ee', '#67e8f9', '#a5f3fc']
+                        }]
+                    },
+                    options: { cutout: 78, plugins: { legend: { position: 'bottom' } } }
+                })
+            }, 200)
+        }
+        
+        function renderUsers() {
+            let html = `
+            <div class="flex justify-between mb-6">
+                <input id="userSearch" placeholder="Search name, ID, barangay..." 
+                       class="w-96 px-6 py-4 rounded-3xl border focus:outline-none focus:border-[#00b4d8]" onkeyup="if(event.keyCode===13) filterUsers()">
+                <div class="flex gap-x-3">
+                    <button onclick="bulkRandomizeUsers()" class="px-6 flex items-center gap-x-2 font-medium bg-slate-900 text-white rounded-3xl">🎲 Bulk Randomize</button>
+                    <button onclick="navigateTo('users'); generateBulkUsers()" class="px-6 flex items-center gap-x-2 font-medium border border-slate-300 rounded-3xl">+ New User</button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-3xl shadow overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b text-xs font-medium text-slate-400">
+                            <th class="text-left pl-8 py-5">CUSTOMER ID</th>
+                            <th class="text-left">NAME</th>
+                            <th class="text-left">LOCATION</th>
+                            <th class="text-left">CONTACT</th>
+                            <th class="text-center">CREDIT SCORE</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="w-28"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody" class="text-sm divide-y"></tbody>
+                </table>
+            </div>`
+            
+            document.getElementById('contentArea').innerHTML = html
+            
+            const tbody = document.getElementById('usersTableBody')
+            tbody.innerHTML = USERS.map(user => `
+                <tr onclick="editUser('${user.id}')">
+                    <td class="pl-8 py-5 font-mono">${user.customerId}</td>
+                    <td class="py-5 font-medium">${user.name}</td>
+                    <td class="py-5">${user.barangay}, ${user.region}</td>
+                    <td class="py-5">${user.contact}</td>
+                    <td class="text-center"><span class="px-4 py-px text-xs rounded-3xl ${user.creditScore > 700 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${user.creditScore}</span></td>
+                    <td class="text-center"><span class="px-5 py-px rounded-3xl text-xs ${user.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : user.status === 'Blacklisted' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}">${user.status}</span></td>
+                    <td class="text-right pr-8">
+                        <button onclick="event.stopImmediatePropagation();editUser('${user.id}')" class="text-xs px-4 py-2 border rounded-2xl">EDIT</button>
+                    </td>
+                </tr>
+            `).join('')
+        }
+        
+        function renderLoans() {
+            const html = `
+            <div class="flex justify-between mb-6 items-center">
+                <h3 class="font-semibold text-xl">All Loans • ${LOANS.length} total</h3>
+                <button onclick="showLoanModal()" class="px-8 py-3 bg-[#00b4d8] text-white rounded-3xl flex items-center gap-x-2 font-medium">+ Assign New Loan</button>
+            </div>
+            <div class="bg-white rounded-3xl shadow overflow-auto max-h-[calc(100vh-220px)]">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-white border-b">
+                        <tr class="text-xs font-medium text-slate-400">
+                            <th class="pl-8 py-4 text-left">LOAN ID</th>
+                            <th class="text-left">CUSTOMER</th>
+                            <th class="text-left">PRODUCT / TYPE</th>
+                            <th class="text-right">FINANCED</th>
+                            <th class="text-center">TERM</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="text-right pr-8">PROGRESS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${LOANS.map(loan => {
+                            const progress = Math.min(100, Math.round((loan.paidAmount / loan.totalPayable) * 100))
+                            return `
+                            <tr onclick="viewLoanProfile('${loan.loanId}')" class="cursor-pointer hover:bg-slate-50">
+                                <td class="pl-8 py-5 font-mono text-sm">${loan.loanId}</td>
+                                <td class="py-5">${loan.userName}</td>
+                                <td class="py-5">${loan.productName || loan.type}</td>
+                                <td class="text-right font-medium">₱${loan.financedAmount.toLocaleString()}</td>
+                                <td class="text-center">${loan.termMonths} mo</td>
+                                <td class="text-center"><span class="px-5 py-px text-xs rounded-3xl ${loan.status === 'Ongoing' ? 'bg-blue-100 text-blue-600' : loan.status === 'Paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}">${loan.status}</span></td>
+                                <td class="pr-8">
+                                    <div class="flex items-center justify-end gap-x-3">
+                                        <div class="w-40 h-2 bg-slate-100 rounded-3xl overflow-hidden">
+                                            <div class="h-2 bg-[#00b4d8]" style="width: ${progress}%"></div>
+                                        </div>
+                                        <span class="text-xs font-medium w-10">${progress}%</span>
+                                    </div>
+                                </td>
+                            </tr>`
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`
+            document.getElementById('contentArea').innerHTML = html
+        }
+        
+        function renderProducts() {
+            let html = `
+            <div class="flex justify-between mb-6">
+                <input id="productSearch" placeholder="Search products..." class="px-6 py-4 rounded-3xl border w-96 focus:outline-none focus:border-[#00b4d8]">
+                <button onclick="generateThousandProducts()" class="flex items-center gap-x-2 px-6 font-medium bg-gradient-to-r from-[#00b4d8] to-cyan-400 text-white rounded-3xl">🚀 Generate 1,000+ products</button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4" id="productGrid"></div>`
+            
+            document.getElementById('contentArea').innerHTML = html
+            
+            const grid = document.getElementById('productGrid')
+            grid.innerHTML = PRODUCTS.map(p => `
+                <div onclick="viewProduct('${p.id}')" class="bg-white rounded-3xl shadow p-4 cursor-pointer hover:-translate-y-1">
+                    <div class="text-xs uppercase tracking-widest text-slate-400 mb-1">${p.category}</div>
+                    <div class="font-medium leading-tight mb-4">${p.name}</div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <div class="text-3xl font-semibold">₱${p.price.toLocaleString()}</div>
+                            <div class="text-emerald-500 text-xs">${p.stock} in stock</div>
+                        </div>
+                        <span class="text-4xl">📱</span>
+                    </div>
+                </div>
+            `).join('')
+        }
+        
+        function renderBilling() {
+            const activeBills = LOANS.filter(l => l.status === 'Ongoing' || l.status === 'Overdue')
+            let html = `
+            <h3 class="font-semibold mb-6">Current Billing Cycle • ${activeBills.length} bills</h3>
+            <div class="space-y-4">`
+            
+            activeBills.forEach(loan => {
+                const dueSoon = new Date(loan.nextDueDate) < new Date(Date.now() + 86400000 * 5)
+                html += `
+                <div class="bg-white rounded-3xl p-6 flex items-center justify-between">
+                    <div class="flex items-center gap-x-6">
+                        <div class="text-4xl">${dueSoon ? '⚠️' : '📅'}</div>
+                        <div>
+                            <p class="font-medium">${loan.userName}</p>
+                            <p class="text-xs text-slate-400">${loan.loanId} • Due ${loan.nextDueDate}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-semibold">₱${loan.monthlyInstallment.toLocaleString()}</div>
+                        <button onclick="markPayment('${loan.loanId}')" class="text-xs mt-2 px-6 py-2 bg-emerald-600 text-white rounded-2xl">PAY NOW</button>
+                    </div>
+                    <div class="text-xs ${dueSoon ? 'text-red-500' : 'text-slate-400'}">${dueSoon ? 'DUE IN 3 DAYS' : 'On track'}</div>
+                </div>`
+            })
+            
+            html += '</div>'
+            document.getElementById('contentArea').innerHTML = html
+        }
+        
+        function renderReceipts() {
+            const html = `
+            <h3 class="font-semibold mb-6">Transaction History • ${RECEIPTS.length} receipts</h3>
+            <div class="bg-white rounded-3xl p-2 max-h-[calc(100vh-220px)] overflow-auto">
+                ${RECEIPTS.map(r => `
+                    <div onclick="showReceipt('${r.receiptId}')" class="flex items-center justify-between px-8 py-5 hover:bg-slate-50 rounded-3xl cursor-pointer">
+                        <div class="flex gap-x-6">
+                            <div class="font-mono text-xs pt-px">${r.receiptId}</div>
+                            <div>
+                                <div class="font-medium">${r.userName}</div>
+                                <div class="text-xs text-slate-400">${new Date(r.date).toLocaleDateString('en-PH')}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold">₱${r.amount.toLocaleString()}</div>
+                            <div class="text-xs text-emerald-500">${r.type}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`
+            document.getElementById('contentArea').innerHTML = html
+        }
+        
+        function renderAnalytics() {
+            const html = `
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-8 bg-white rounded-3xl p-8">
+                    <h3 class="font-semibold mb-6">Risk Level Heatmap</h3>
+                    <canvas id="riskChart" height="300"></canvas>
+                </div>
+                <div class="col-span-4 space-y-6">
+                    <div class="bg-white rounded-3xl p-8">
+                        <h4 class="text-sm mb-4">Fraud Detection</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center border-b pb-4"><span class="text-sm">Multiple loans in same barangay</span><span class="text-red-500 text-xs font-medium">3 alerts</span></div>
+                            <div class="flex justify-between items-center border-b pb-4"><span class="text-sm">Unusually high credit score jump</span><span class="text-red-500 text-xs font-medium">1 alert</span></div>
+                            <div class="flex justify-between items-center"><span class="text-sm">Blacklisted user tried new loan</span><span class="text-amber-500 text-xs font-medium">2 alerts</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-8 text-center">
+                        <p class="font-semibold">Total Profit YTD</p>
+                        <p class="text-7xl font-semibold text-[#00b4d8] mt-4">₱8.4M</p>
+                        <p class="text-emerald-500">+14.8% vs last year</p>
+                    </div>
+                </div>
+            </div>`
+            document.getElementById('contentArea').innerHTML = html
+            
+            setTimeout(() => {
+                new Chart(document.getElementById('riskChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: REGIONS,
+                        datasets: [{
+                            label: 'Risk Score',
+                            data: [12, 24, 9, 31, 18, 7, 22, 15],
+                            backgroundColor: '#f43f5e'
+                        }]
+                    }
+                })
+            }, 100)
+        }
+        
+        function renderAdmin() {
+            const html = `
+            <div class="max-w-2xl mx-auto">
+                <div class="bg-white rounded-3xl p-8">
+                    <h2 class="text-2xl font-semibold mb-8">Master Admin Controls</h2>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <label class="block text-slate-400 mb-3">Global Interest Rate</label>
+                            <div class="flex items-center gap-x-4">
+                                <input id="globalRate" type="number" value="2.9" step="0.1" class="w-24 text-center text-4xl font-semibold border rounded-2xl py-2">
+                                <span class="text-xl">%</span>
+                                <button onclick="applyGlobalRate()" class="px-6 py-3 bg-slate-900 text-white rounded-2xl">Apply to ALL loans</button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-6">
+                            <button onclick="massEvent('overdue')" class="h-24 bg-orange-50 text-orange-700 rounded-3xl text-left px-8 flex flex-col justify-center">
+                                <span class="font-semibold text-lg">Trigger Mass Overdue</span>
+                                <span class="text-xs">Simulate late payments across 20% of loans</span>
+                            </button>
+                            <button onclick="massEvent('promo')" class="h-24 bg-emerald-50 text-emerald-700 rounded-3xl text-left px-8 flex flex-col justify-center">
+                                <span class="font-semibold text-lg">Launch 0% Promo</span>
+                                <span class="text-xs">Next 48 hours — zero interest on new gadgets</span>
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <button onclick="exportAllData()" class="w-full py-6 bg-slate-900 text-white rounded-3xl font-medium flex items-center justify-center gap-x-3">
+                                📤 EXPORT FULL DATASET (JSON)
+                            </button>
+                        </div>
+                        
+                        <div class="text-xs text-slate-400 text-center">All changes are instantly saved to localStorage and visible in every section</div>
+                    </div>
+                </div>
+            </div>`
+            document.getElementById('contentArea').innerHTML = html
+        }
+        
+        function renderCurrentPage() {
+            const active = document.querySelector('.sidebar-link.active').id.replace('nav-', '')
+            if (active === 'dashboard') renderDashboard()
+            else if (active === 'users') renderUsers()
+            else if (active === 'loans') renderLoans()
+            else if (active === 'products') renderProducts()
+            else if (active === 'billing') renderBilling()
+            else if (active === 'receipts') renderReceipts()
+            else if (active === 'analytics') renderAnalytics()
+            else if (active === 'admin') renderAdmin()
+        }
+        
+        // ============== NAVIGATION ==============
+        function navigateTo(section) {
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'))
+            document.getElementById('nav-' + section).classList.add('active')
+            document.getElementById('pageTitle').textContent = section === 'dashboard' ? 'Dashboard' : 
+                                                              section === 'users' ? 'Users Database' : 
+                                                              section === 'loans' ? 'Loan Portfolio' : 
+                                                              section === 'products' ? 'Product Catalog' : 
+                                                              section === 'billing' ? 'Billing & Payments' :
+                                                              section === 'receipts' ? 'Receipts & History' :
+                                                              section === 'analytics' ? 'Analytics & Insights' : 'Master Controls'
+            renderCurrentPage()
+        }
+        
+        // ============== USER EDITING ==============
+        function editUser(id) {
+            currentUserIdEditing = id
+            const user = USERS.find(u => u.id === id)
+            if (!user) return
+            
+            let formHTML = `
+            <div class="col-span-2">
+                <label class="text-xs font-medium">Full Name</label>
+                <input id="modalName" value="${user.name}" class="w-full mt-2 px-5 py-4 rounded-2xl border">
+            </div>
+            <div>
+                <label class="text-xs font-medium">Customer ID</label>
+                <input id="modalCustomerId" value="${user.customerId}" class="w-full mt-2 px-5 py-4 rounded-2xl border">
+            </div>
+            <div>
+                <label class="text-xs font-medium">Barangay</label>
+                <input id="modalBarangay" value="${user.barangay}" class="w-full mt-2 px-5 py-4 rounded-2xl border">
+            </div>
+            <div>
+                <label class="text-xs font-medium">Region</label>
+                <select id="modalRegion" class="w-full mt-2 px-5 py-4 rounded-2xl border">${REGIONS.map(r => `<option ${r===user.region?'selected':''}>${r}</option>`).join('')}</select>
+            </div>
+            <div>
+                <label class="text-xs font-medium">Credit Score</label>
+                <input id="modalCredit" type="number" value="${user.creditScore}" class="w-full mt-2 px-5 py-4 rounded-2xl border">
+            </div>
+            <div>
+                <label class="text-xs font-medium">Status</label>
+                <select id="modalStatus" class="w-full mt-2 px-5 py-4 rounded-2xl border">
+                    <option ${user.status==='Active'?'selected':''}>Active</option>
+                    <option ${user.status==='Pending'?'selected':''}>Pending</option>
+                    <option ${user.status==='Blacklisted'?'selected':''}>Blacklisted</option>
+                    <option ${user.status==='Completed'?'selected':''}>Completed</option>
+                </select>
+            </div>`
+            
+            document.getElementById('userFormContent').innerHTML = formHTML
+            document.getElementById('userModal').classList.remove('hidden')
+            document.getElementById('userModal').classList.add('flex')
+        }
+        
+        function saveUserEdit() {
+            const user = USERS.find(u => u.id === currentUserIdEditing)
+            if (!user) return
+            
+            user.name = document.getElementById('modalName').value
+            user.customerId = document.getElementById('modalCustomerId').value
+            user.barangay = document.getElementById('modalBarangay').value
+            user.region = document.getElementById('modalRegion').value
+            user.creditScore = parseInt(document.getElementById('modalCredit').value)
+            user.status = document.getElementById('modalStatus').value
+            
+            hideModal('userModal')
+            renderCurrentPage()
+            saveData()
+        }
+        
+        function hideModal(id) {
+            const modal = document.getElementById(id)
+            modal.classList.add('hidden')
+            modal.classList.remove('flex')
+        }
+        
+        // ============== LOAN MODAL ==============
+        function showLoanModal() {
+            let form = `
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="text-xs font-medium block mb-2">Select User</label>
+                    <select id="loanUserSelect" class="w-full px-5 py-4 border rounded-2xl text-sm">`
+            
+            USERS.slice(0, 30).forEach(u => {
+                form += `<option value="${u.id}">${u.name} (${u.customerId})</option>`
+            })
+            form += `</select></div>`
+            
+            form += `
+            <div class="flex-1">
+                <label class="text-xs font-medium block mb-2">Product / Loan Type</label>
+                <select id="loanProductSelect" class="w-full px-5 py-4 border rounded-2xl text-sm">`
+            
+            PRODUCTS.slice(0, 25).forEach(p => {
+                form += `<option value="${p.id}">${p.name} — ₱${p.price}</option>`
+            })
+            form += `</select></div></div>`
+            
+            form += `
+            <div class="grid grid-cols-3 gap-4 mt-6">
+                <div>
+                    <label class="text-xs">Down Payment %</label>
+                    <input id="loanDP" type="number" value="20" class="w-full px-5 py-4 border rounded-2xl">
+                </div>
+                <div>
+                    <label class="text-xs">Term (months)</label>
+                    <select id="loanTerm" class="w-full px-5 py-4 border rounded-2xl">
+                        <option value="6">6</option><option value="12" selected>12</option><option value="18">18</option><option value="24">24</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs">Monthly Interest</label>
+                    <input id="loanRate" type="number" value="2.8" step="0.1" class="w-full px-5 py-4 border rounded-2xl">
+                </div>
+            </div>`
+            
+            document.getElementById('loanFormContent').innerHTML = form
+            document.getElementById('loanModal').classList.remove('hidden')
+            document.getElementById('loanModal').classList.add('flex')
+        }
+        
+        function assignLoanFromModal() {
+            const userId = document.getElementById('loanUserSelect').value
+            const productId = document.getElementById('loanProductSelect').value
+            const dp = parseFloat(document.getElementById('loanDP').value)
+            const term = parseInt(document.getElementById('loanTerm').value)
+            const rate = parseFloat(document.getElementById('loanRate').value)
+            
+            const user = USERS.find(u => u.id === userId)
+            const product = PRODUCTS.find(p => p.id === productId)
+            
+            const calc = calculateLoan(product.price, term, rate, dp)
+            
+            const newLoan = {
+                loanId: 'L-' + String(100000 + Math.floor(Math.random() * 899999)),
+                userId: user.id,
+                userName: user.name,
+                type: 'Product Loan',
+                productName: product.name,
+                financedAmount: calc.financedAmount,
+                termMonths: term,
+                monthlyInterestRate: rate,
+                monthlyInstallment: calc.monthlyInstallment,
+                totalPayable: calc.totalPayable,
+                paidAmount: 0,
+                status: 'Ongoing',
+                startDate: new Date().toISOString().split('T')[0],
+                nextDueDate: new Date(Date.now() + 2.592e+9).toISOString().split('T')[0],
+                paymentHistory: []
+            }
+            
+            LOANS.unshift(newLoan)
+            hideModal('loanModal')
+            saveData()
+            renderCurrentPage()
+            
+            // Show success toast
+            const toast = document.createElement('div')
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#00b4d8;color:white;padding:16px 24px;border-radius:9999px;box-shadow:10px 10px 0 -4px rgb(0 180 216);'
+            toast.textContent = `✅ Loan assigned to ${user.name}`
+            document.body.appendChild(toast)
+            setTimeout(() => toast.remove(), 2800)
+        }
+        
+        function viewLoanProfile(loanId) {
+            const loan = LOANS.find(l => l.loanId === loanId)
+            if (!loan) return
+            alert(`🔎 Loan Profile for ${loan.userName}\n\nFinanced: ₱${loan.financedAmount}\nMonthly: ₱${loan.monthlyInstallment}\nProgress: ${Math.round(loan.paidAmount / loan.totalPayable * 100)}%\n\nEditable in full table.`)
+            // In real system this would open a full profile modal
+        }
+        
+        function markPayment(loanId) {
+            const loan = LOANS.find(l => l.loanId === loanId)
+            if (!loan) return
+            const amount = loan.monthlyInstallment
+            loan.paidAmount += amount
+            loan.paymentHistory.unshift({ date: new Date().toISOString().split('T')[0], amount: amount, status: 'Paid' })
+            createReceipt(loan, amount)
+            saveData()
+            renderCurrentPage()
+            alert('✅ Payment of ₱' + amount + ' recorded successfully')
+        }
+        
+        // ============== BONUS FEATURES ==============
+        function showCalculator() {
+            document.getElementById('calcModal').classList.remove('hidden')
+            document.getElementById('calcModal').classList.add('flex')
+            
+            const updateCalc = () => {
+                const amount = parseFloat(document.getElementById('calcAmount').value) || 0
+                const term = parseInt(document.getElementById('calcTerm').value)
+                const rate = parseFloat(document.getElementById('calcRate').value)
+                const calc = calculateLoan(amount, term, rate, 0)
+                document.getElementById('calcMonthly').textContent = '₱' + calc.monthlyInstallment.toLocaleString()
+                document.getElementById('calcTotal').textContent = '₱' + calc.totalPayable.toLocaleString()
+                document.getElementById('calcInterest').textContent = '₱' + calc.totalInterest.toLocaleString()
+            }
+            
+            document.getElementById('calcAmount').oninput = updateCalc
+            document.getElementById('calcTerm').onchange = updateCalc
+            document.getElementById('calcRate').oninput = updateCalc
+            updateCalc()
+        }
+        
+        function generateBulkUsers() {
+            // One new user instantly
+            USERS.unshift(generateNewUser())
+            if (document.querySelector('.sidebar-link.active').id === 'nav-users') renderUsers()
+            else renderCurrentPage()
+            saveData()
+        }
+        
+        function bulkRandomizeUsers() {
+            // Randomize credit scores and status for 40% of users
+            USERS.forEach(u => {
+                if (Math.random() > 0.6) {
+                    u.creditScore = Math.floor(580 + Math.random() * 270)
+                    u.status = ['Active','Pending','Active'][Math.floor(Math.random()*3)]
+                }
+            })
+            renderUsers()
+            saveData()
+        }
+        
+        function generateThousandProducts() {
+            for (let i = 0; i < 1000; i++) {
+                PRODUCTS.push(generateProduct())
+            }
+            alert('✅ 1,000 new products generated and added to catalog')
+            renderProducts()
+            saveData()
+        }
+        
+        function applyGlobalRate() {
+            const rate = parseFloat(document.getElementById('globalRate').value)
+            LOANS.forEach(loan => {
+                if (loan.status === 'Ongoing') loan.monthlyInterestRate = rate
+            })
+            alert('Global interest updated to ' + rate + '%')
+            saveData()
+            renderCurrentPage()
+        }
+        
+        function massEvent(type) {
+            if (type === 'overdue') {
+                LOANS.forEach((l, i) => {
+                    if (i % 5 === 0) l.status = 'Overdue'
+                })
+            } else if (type === 'promo') {
+                alert('🎟️ 0% promo activated for next 48 hours on all Gadget Loans')
+                // Would affect calculations in a full system
+            }
+            renderCurrentPage()
+            saveData()
+        }
+        
+        function exportAllData() {
+            const dataStr = JSON.stringify({ users: USERS, loans: LOANS, products: PRODUCTS, payments: PAYMENTS, receipts: RECEIPTS }, null, 2)
+            const blob = new Blob([dataStr], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = 'homecredit-master-backup-' + new Date().toISOString().slice(0,10) + '.json'
+            link.click()
+        }
+        
+        function toggleDarkMode() {
+            DARK_MODE = !DARK_MODE
+            if (DARK_MODE) {
+                document.documentElement.classList.add('dark')
+            } else {
+                document.documentElement.classList.remove('dark')
+            }
+        }
+        
+        function toggleRealLifeMode() {
+            REAL_LIFE_MODE = !REAL_LIFE_MODE
+            const badge = document.getElementById('realLifeBadge')
+            badge.textContent = REAL_LIFE_MODE ? 'REAL-LIFE MODE ON (hidden fees)' : 'REAL-LIFE MODE OFF'
+            badge.style.backgroundColor = REAL_LIFE_MODE ? '#f59e0b' : '#ecfdf5'
+            badge.style.color = REAL_LIFE_MODE ? '#fff' : '#10b981'
+        }
+        
+        function showNotificationPanel() {
+            alert('🛎️ Fraud & System Alerts:\n• 2 users with duplicate contact numbers\n• 1 overdue loan in NCR\n• Credit score drop detected for HC-7843921')
+        }
+        
+        function viewProduct(id) {
+            const product = PRODUCTS.find(p => p.id === id)
+            if (product) alert(`📦 ${product.name}\nPrice: ₱${product.price.toLocaleString()}\nStock: ${product.stock}\nEditable in catalog view.`)
+        }
+        
+        function showReceipt(receiptId) {
+            const receipt = RECEIPTS.find(r => r.receiptId === receiptId)
+            if (!receipt) return
+            
+            let previewHTML = `
+            <div class="max-w-[380px] mx-auto bg-white border-2 border-slate-300 rounded-3xl p-6 font-mono text-xs leading-tight">
+                <div class="text-center mb-6">
+                    <div class="flex justify-center mb-2 text-4xl">🏦</div>
+                    <div class="text-lg font-semibold">Home Credit Philippines</div>
+                    <div class="text-[10px]">Official Receipt • ${receipt.receiptId}</div>
+                </div>
+                <div class="flex justify-between mb-4"><span>Date:</span><span>${new Date(receipt.date).toLocaleString('en-PH')}</span></div>
+                <div class="flex justify-between mb-4"><span>Customer:</span><span>${receipt.userName}</span></div>
+                <div class="flex justify-between mb-4"><span>Loan ID:</span><span>${receipt.loanId}</span></div>
+                <div class="border-t border-b py-4 mb-4">
+                    <div class="flex justify-between"><span>Payment</span><span class="font-semibold">₱${receipt.amount.toLocaleString()}</span></div>
+                    <div class="flex justify-between text-[10px] mt-3"><span>Principal</span><span>₱${receipt.breakdown.principal}</span></div>
+                    <div class="flex justify-between text-[10px]"><span>Interest</span><span>₱${receipt.breakdown.interest}</span></div>
+                </div>
+                <div class="text-center text-[10px] text-slate-400">Thank you for your payment.<br>Keep your receipt for records.</div>
+                <div class="text-[9px] text-center mt-6 text-slate-300">Transaction ID ${receipt.transactionId}</div>
+            </div>`
+            
+            document.getElementById('receiptPreview').innerHTML = previewHTML
+            document.getElementById('receiptModal').classList.remove('hidden')
+            document.getElementById('receiptModal').classList.add('flex')
+        }
+        
+        function downloadReceipt() {
+            hideModal('receiptModal')
+            alert('📄 Receipt downloaded as PDF (simulation)')
+        }
+        
+        function logout() {
+            if (confirm('End Master Controller session?')) {
+                document.getElementById('mainApp').classList.add('hidden')
+                document.getElementById('loginModal').classList.remove('hidden')
+                clearInterval(simulationTimer)
+            }
+        }
+        
+        function resetSystem() {
+            if (confirm('Reset entire simulation to factory defaults?')) {
+                localStorage.removeItem('homeCreditMasterData')
+                location.reload()
+            }
+        }
+        
+        // ============== MAIN ENTRY POINT ==============
+        function handleLogin() {
+            const username = document.getElementById('usernameInput').value
+            const password = document.getElementById('passwordInput').value
+            
+            if (username === 'admin' && password === 'admin') {
+                document.getElementById('loginModal').classList.add('hidden')
+                document.getElementById('mainApp').classList.remove('hidden')
+                initTailwind().init()
+                loadData()
+                startSimulation()
+                navigateTo('dashboard')
+                
+                // Real-time clock
+                setInterval(() => {
+                    document.getElementById('currentTime').innerHTML = `📍 ${new Date().toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', hour12: true })} • LIVE`
+                }, 1000)
+                
+                console.log('%c✅ Home Credit Master Controller fully loaded and running!', 'background:#00b4d8;color:white;padding:2px 6px;border-radius:4px')
+            } else {
+                alert('Invalid credentials. Use admin / admin')
+            }
+        }
+        
+        // Auto-start the demo when script loads (in case user opens directly)
+        console.log('Home Credit Master Controller simulation ready. Open in browser for full experience.')
+    </script>
+</body>
+</html>
